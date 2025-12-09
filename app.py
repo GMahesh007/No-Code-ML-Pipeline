@@ -21,8 +21,22 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+# Get the base directory
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
+app = Flask(__name__, 
+            static_folder=STATIC_DIR,
+            static_url_path='/static')
 CORS(app)
+
+# Create uploads directory
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+logger.info(f"Base directory: {BASE_DIR}")
+logger.info(f"Static directory: {STATIC_DIR}")
+logger.info(f"Upload directory: {UPLOAD_FOLDER}")
 
 # Store pipeline state in memory (for demo purposes)
 pipeline_state = {
@@ -40,9 +54,6 @@ pipeline_state = {
     'feature_columns': None
 }
 
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 # Error handlers
 @app.errorhandler(500)
 def internal_error(error):
@@ -57,11 +68,17 @@ def not_found(error):
 @app.route('/')
 def index():
     try:
-        logger.info("Serving index.html")
-        return send_from_directory('static', 'index.html')
+        logger.info(f"Serving index.html from {STATIC_DIR}")
+        index_path = os.path.join(STATIC_DIR, 'index.html')
+        if os.path.exists(index_path):
+            logger.info(f"index.html found at {index_path}")
+            return send_from_directory(STATIC_DIR, 'index.html')
+        else:
+            logger.error(f"index.html not found at {index_path}")
+            return jsonify({'error': 'index.html not found', 'path': index_path}), 404
     except Exception as e:
         logger.error(f"Error serving index: {str(e)}")
-        return jsonify({'error': 'Failed to load application'}), 500
+        return jsonify({'error': 'Failed to load application', 'details': str(e)}), 500
 
 @app.route('/health')
 def health():
@@ -344,7 +361,11 @@ def reset_pipeline():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     logger.info(f"Starting Flask app on port {port}")
-    logger.info(f"Static folder: {app.static_folder}")
+    logger.info(f"Static folder: {STATIC_DIR}")
+    logger.info(f"Upload folder: {UPLOAD_FOLDER}")
     logger.info(f"Current directory: {os.getcwd()}")
-    logger.info(f"Directory contents: {os.listdir('.')}")
+    if os.path.exists(STATIC_DIR):
+        logger.info(f"Static directory exists. Contents: {os.listdir(STATIC_DIR)}")
+    else:
+        logger.error(f"Static directory does not exist!")
     app.run(host='0.0.0.0', port=port, debug=False)
