@@ -70,9 +70,18 @@ def handle_exception(e):
 
 @app.route('/')
 def index():
+    logger.info("=" * 50)
+    logger.info("ROOT ROUTE ACCESSED")
+    logger.info(f"Remote address: {request.remote_addr}")
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"Request path: {request.path}")
+    logger.info(f"STATIC_DIR: {STATIC_DIR}")
+    logger.info(f"STATIC_DIR exists: {os.path.exists(STATIC_DIR)}")
+    
     try:
-        logger.info(f"Request for / from {request.remote_addr}")
         index_path = os.path.join(STATIC_DIR, 'index.html')
+        logger.info(f"index_path: {index_path}")
+        logger.info(f"index_path exists: {os.path.exists(index_path)}")
         
         if not os.path.exists(STATIC_DIR):
             logger.error(f"Static directory does not exist: {STATIC_DIR}")
@@ -83,8 +92,10 @@ def index():
             logger.error(f"Static dir contents: {os.listdir(STATIC_DIR)}")
             return make_response(jsonify({'error': 'index.html not found'}), 404)
         
-        logger.info(f"Serving index.html from {index_path}")
-        return send_from_directory(STATIC_DIR, 'index.html')
+        logger.info("About to send file...")
+        response = send_from_directory(STATIC_DIR, 'index.html')
+        logger.info("File sent successfully!")
+        return response
         
     except Exception as e:
         logger.error(f"Error serving index: {str(e)}", exc_info=True)
