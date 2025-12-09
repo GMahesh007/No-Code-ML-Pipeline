@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -58,45 +58,55 @@ pipeline_state = {
 @app.errorhandler(500)
 def internal_error(error):
     logger.error(f"Internal error: {str(error)}")
-    return jsonify({'error': 'Internal server error', 'details': str(error)}), 500
+    return make_response(jsonify({'error': 'Internal server error', 'details': str(error)}), 500)
 
 @app.errorhandler(404)
 def not_found(error):
-    logger.warning(f"Not found: {str(error)}")
-    return jsonify({'error': 'Resource not found'}), 404
+    logger.warning(f"Not found: {request.url}")
+    return make_response(jsonify({'error': 'Resource not found', 'path': request.path}), 404)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+    return make_response(jsonify({'error': 'Internal server error', 'details': str(e)}), 500)
 
 @app.route('/')
 def index():
     try:
         logger.info(f"Request for / from {request.remote_addr}")
-        logger.info(f"Serving index.html from {STATIC_DIR}")
         index_path = os.path.join(STATIC_DIR, 'index.html')
-        if os.path.exists(index_path):
-            logger.info(f"index.html found at {index_path}")
-            with open(index_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
-        else:
+        
+        if not os.path.exists(STATIC_DIR):
+            logger.error(f"Static directory does not exist: {STATIC_DIR}")
+            return make_response(jsonify({'error': 'Static directory not found'}), 500)
+            
+        if not os.path.exists(index_path):
             logger.error(f"index.html not found at {index_path}")
-            logger.error(f"Static dir contents: {os.listdir(STATIC_DIR) if os.path.exists(STATIC_DIR) else 'DOES NOT EXIST'}")
-            return jsonify({'error': 'index.html not found', 'path': index_path}), 404
+            logger.error(f"Static dir contents: {os.listdir(STATIC_DIR)}")
+            return make_response(jsonify({'error': 'index.html not found'}), 404)
+        
+        logger.info(f"Serving index.html from {index_path}")
+        return send_from_directory(STATIC_DIR, 'index.html')
+        
     except Exception as e:
         logger.error(f"Error serving index: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to load application', 'details': str(e)}), 500
+        return make_response(jsonify({'error': str(e)}), 500)
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204
+    return make_response('', 204)
 
 @app.route('/health')
 def health():
-    return jsonify({
+    health_status = {
         'status': 'healthy', 
         'service': 'ML Pipeline Builder',
         'static_dir': STATIC_DIR,
         'static_exists': os.path.exists(STATIC_DIR),
         'index_exists': os.path.exists(os.path.join(STATIC_DIR, 'index.html'))
-    }), 200
+    }
+    logger.info(f"Health check: {health_status}")
+    return make_response(jsonify(health_status), 200)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
