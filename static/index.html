@@ -694,7 +694,7 @@
             uploadMessage.innerHTML = '<div class="loading"><div class="spinner"></div><p>Uploading and processing file...</p></div>';
             
             try {
-                const response = await fetch('http://localhost:5000/api/upload', {
+                const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -769,7 +769,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:5000/api/select-target', {
+                const response = await fetch('/api/select-target', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ target_column: targetColumn })
@@ -804,7 +804,7 @@
             preprocessMessage.innerHTML = '<div class="loading"><div class="spinner"></div><p>Applying preprocessing...</p></div>';
             
             try {
-                const response = await fetch('http://localhost:5000/api/preprocess', {
+                const response = await fetch('/api/preprocess', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ type: selectedPreprocessing })
@@ -838,7 +838,7 @@
             splitMessage.innerHTML = '<div class="loading"><div class="spinner"></div><p>Splitting dataset...</p></div>';
             
             try {
-                const response = await fetch('http://localhost:5000/api/split', {
+                const response = await fetch('/api/split', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ split_ratio: splitRatio })
@@ -883,7 +883,7 @@
             trainMessage.innerHTML = '<div class="loading"><div class="spinner"></div><p>Training model... This may take a moment.</p></div>';
             
             try {
-                const response = await fetch('http://localhost:5000/api/train', {
+                const response = await fetch('/api/train', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ model_type: selectedModel })
@@ -932,7 +932,7 @@
         async function resetPipeline() {
             if (confirm('Are you sure you want to reset the pipeline? All progress will be lost.')) {
                 try {
-                    await fetch('http://localhost:5000/api/reset', {
+                    await fetch('/api/reset', {
                         method: 'POST'
                     });
                     
