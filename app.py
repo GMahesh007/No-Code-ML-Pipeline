@@ -15,6 +15,11 @@ import os
 import json
 import io
 import base64
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
@@ -38,9 +43,25 @@ pipeline_state = {
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Error handlers
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal error: {str(error)}")
+    return jsonify({'error': 'Internal server error', 'details': str(error)}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    logger.warning(f"Not found: {str(error)}")
+    return jsonify({'error': 'Resource not found'}), 404
+
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    try:
+        logger.info("Serving index.html")
+        return send_from_directory('static', 'index.html')
+    except Exception as e:
+        logger.error(f"Error serving index: {str(e)}")
+        return jsonify({'error': 'Failed to load application'}), 500
 
 @app.route('/health')
 def health():
@@ -322,4 +343,8 @@ def reset_pipeline():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting Flask app on port {port}")
+    logger.info(f"Static folder: {app.static_folder}")
+    logger.info(f"Current directory: {os.getcwd()}")
+    logger.info(f"Directory contents: {os.listdir('.')}")
     app.run(host='0.0.0.0', port=port, debug=False)
