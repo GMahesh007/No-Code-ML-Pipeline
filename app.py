@@ -36,12 +36,15 @@ pipeline_state = {
 }
 
 UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy', 'service': 'ML Pipeline Builder'}), 200
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -317,6 +320,6 @@ def reset_pipeline():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
