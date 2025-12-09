@@ -68,21 +68,35 @@ def not_found(error):
 @app.route('/')
 def index():
     try:
+        logger.info(f"Request for / from {request.remote_addr}")
         logger.info(f"Serving index.html from {STATIC_DIR}")
         index_path = os.path.join(STATIC_DIR, 'index.html')
         if os.path.exists(index_path):
             logger.info(f"index.html found at {index_path}")
-            return send_from_directory(STATIC_DIR, 'index.html')
+            with open(index_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
         else:
             logger.error(f"index.html not found at {index_path}")
+            logger.error(f"Static dir contents: {os.listdir(STATIC_DIR) if os.path.exists(STATIC_DIR) else 'DOES NOT EXIST'}")
             return jsonify({'error': 'index.html not found', 'path': index_path}), 404
     except Exception as e:
-        logger.error(f"Error serving index: {str(e)}")
+        logger.error(f"Error serving index: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to load application', 'details': str(e)}), 500
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'service': 'ML Pipeline Builder'}), 200
+    return jsonify({
+        'status': 'healthy', 
+        'service': 'ML Pipeline Builder',
+        'static_dir': STATIC_DIR,
+        'static_exists': os.path.exists(STATIC_DIR),
+        'index_exists': os.path.exists(os.path.join(STATIC_DIR, 'index.html'))
+    }), 200
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
